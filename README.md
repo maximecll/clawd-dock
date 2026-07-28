@@ -57,7 +57,7 @@ Right-click Clawd (or the paw) for the menu.
 |---|---|
 | Wanders | walks along the Dock's edge, turns around at both ends |
 | Takes breaks | sits down, breathes, blinks |
-| Falls asleep | after ~22 s of doing nothing, with floating `Zzz` |
+| Falls asleep | after 90 s of nothing happening, with floating `Zzz` |
 | Reacts | click him for a little hop and a heart |
 | Follows the cursor | optional, from the menu |
 
