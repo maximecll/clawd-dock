@@ -1,0 +1,4 @@
+build/
+.pv/
+*.png
+.DS_Store
