@@ -211,9 +211,11 @@ final class PetController: NSObject {
         if -vy > 130 {                          // il rebondit encore
             vy = -vy * Cfg.bounciness
             vx *= 0.55
-        } else {                                // arrivé : transformation en cuistot
+        } else {
             vy = 0; vx = 0
-            startCooking()
+            // Il n'enfile la toque que si Claude travaille vraiment. Une grimpe
+            // lancée à la main depuis le menu se termine par un simple coucou.
+            if claudeBusy { startCooking() } else { setState(.happy, for: 1.2) }
         }
     }
 
@@ -252,6 +254,8 @@ final class PetController: NSObject {
             if view.state == .cooking { setState(.happy, for: 1.8); jumpVel = 150 }
         case "session-end":
             claudeBusy = false
+        case "climb":                    // grimpe sans prétendre que Claude travaille
+            if !airborne.contains(view.state) { startAdventure() }
         case "toss":                     // utile pour tester : echo toss > le fichier
             if !airborne.contains(view.state) { menuToss() }
         default:                         // "prompt" : un message vient de partir
@@ -413,7 +417,7 @@ final class PetController: NSObject {
         if triggerCountdown <= 0 { triggerCountdown = 0.3; checkTrigger() }
 
         // La toque : portée quand il cuisine ou qu'il l'a choisie, jamais en grimpe
-        view.chefMode = (chefMode || claudeBusy)
+        view.chefMode = (chefMode || claudeBusy || view.state == .cooking)
             && view.state != .hanging && view.state != .leaping
 
         // Tout ce qui se passe en l'air court-circuite la marche normale

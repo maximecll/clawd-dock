@@ -92,7 +92,9 @@ Three hooks write a keyword into `~/.clawd-dock/trigger`, which the app watches:
 | Claude is closed | *(detected on its own)* | He sleeps until you reopen Claude |
 
 **The pan means one thing only: Claude is working.** He never starts cooking on his
-own — if you see the frying pan, a request is in flight. If the `Stop` hook is ever
+own — if you see the frying pan, a request is in flight. Even the manual
+**Go climbing! 🧗** menu action ends with a wave rather than the stove when Claude
+is idle. If the `Stop` hook is ever
 missed (crash, machine asleep), a watchdog clears the busy state after 15 minutes,
 and closing Claude clears it immediately.
 
@@ -133,6 +135,7 @@ tail -f ~/.clawd-dock/log
 ```bash
 echo prompt > ~/.clawd-dock/trigger   # climb, then cook
 echo done   > ~/.clawd-dock/trigger   # serve the dish
+echo climb  > ~/.clawd-dock/trigger   # climb without pretending Claude is busy
 echo toss   > ~/.clawd-dock/trigger   # launch him, parachute and all
 ```
 
