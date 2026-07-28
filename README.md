@@ -168,6 +168,11 @@ strip reserved by `NSScreen.visibleFrame` — which gives the correct ledge when
 Dock is at the bottom. Hidden Dock, or Dock on the left/right: he walks along the
 bottom of the screen instead.
 
+**Known limits.** Developed and tested on a single Apple Silicon Mac with the Dock at
+the bottom. The release binary is arm64-only — Intel users should build from source.
+On a multi-display setup he always lives on the main screen. The left/right and
+auto-hidden Dock paths are written but have not been exercised much; issues welcome.
+
 ## Development
 
 `Tools/preview.swift` renders every pose off-screen into a PNG, so you can check the
