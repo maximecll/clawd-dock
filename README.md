@@ -24,9 +24,11 @@ four legs, two square eyes.
 
 ## Install
 
-Grab the prebuilt app from the [latest release](../../releases/latest), unzip it,
-and drop it in `/Applications`. macOS will warn about an unidentified developer
-(the app is ad-hoc signed) — right-click → **Open** the first time, or run:
+Download **`Clawd-Dock.dmg`** from the [latest release](../../releases/latest), open
+it, drag `Clawd Dock.app` into `/Applications`. No build step, no source needed.
+
+macOS will warn about an unidentified developer (the app is ad-hoc signed, not
+notarized) — right-click → **Open** the first time, or run:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/Clawd Dock.app"
@@ -79,7 +81,13 @@ Three hooks write a keyword into `~/.clawd-dock/trigger`, which the app watches:
 | Claude is answering | *(meanwhile)* | He stays at the stove, tossing peppers, tomato and corn in his pan |
 | Claude is done | `Stop` → `done` | He serves the dish: a hop and a heart, then back to wandering |
 | Session ended | `SessionEnd` → `session-end` | He settles down |
+| Claude is open but idle | *(default)* | He just wanders and sits. He dozes off after 90 s of nothing |
 | Claude is closed | *(detected on its own)* | He sleeps until you reopen Claude |
+
+**The pan means one thing only: Claude is working.** He never starts cooking on his
+own — if you see the frying pan, a request is in flight. If the `Stop` hook is ever
+missed (crash, machine asleep), a watchdog clears the busy state after 15 minutes,
+and closing Claude clears it immediately.
 
 Claude's presence is checked through `NSWorkspace.runningApplications` (bundle
 `com.anthropic.claude*`), not window geometry — a minimized or compact window won't
@@ -95,6 +103,15 @@ put him to sleep.
 `.bak-clawd` first and is safe to re-run (no duplicate entries). To remove: delete
 the entries containing `.clawd-dock/trigger`, or restore the backup. Hooks are read
 when a Claude Code session starts.
+
+### Checking what he's reacting to
+
+Every hook event and state change is appended to `~/.clawd-dock/log` (capped at
+64 KB), which makes it easy to see whether a hook actually fired:
+
+```bash
+tail -f ~/.clawd-dock/log
+```
 
 ### Trigger it by hand
 
@@ -120,6 +137,8 @@ Everything lives at the top of [`Sources/PetView.swift`](Sources/PetView.swift),
 - `fallGravity`, `bounciness` — free fall and bounces
 - `chuteFall`, `chuteDrift`, `chuteCurve` — descent speed and shape of the curve
 - `chuteMinHeight` — below this height the canopy won't open
+- `busyTimeout` — how long before a missed `Stop` hook is written off
+- `boredomDelay` — how long he stays awake with nothing happening
 
 ## Footprint
 

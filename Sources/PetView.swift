@@ -26,6 +26,8 @@ enum Cfg {
     static let chuteDrift: CGFloat = 82       // amplitude du louvoiement horizontal
     static let chuteCurve: Double = 0.42      // fréquence de la courbe, en Hz
     static let chuteOpenTime: Double = 0.35   // durée d'ouverture de la voile
+    static let busyTimeout: TimeInterval = 900 // au-delà, on considère Claude libre
+    static let boredomDelay: TimeInterval = 90 // Claude ouvert : il s'assoupit après
 }
 
 enum Palette {

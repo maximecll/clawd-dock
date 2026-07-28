@@ -40,6 +40,7 @@ final class PetController: NSObject {
     private var claudeOpen = true              // une fenêtre Claude est-elle ouverte ?
     private var claudeBusy = false             // Claude est-il en train de répondre ?
     private var asleepForClaude = false        // endormi parce que Claude est fermé
+    private var busySince: TimeInterval = 0    // depuis quand Claude est réputé occupé
     private var chuteDir: CGFloat = 1          // sens de la diagonale sous voile
     private var lastOrigin = NSPoint(x: CGFloat.infinity, y: CGFloat.infinity)
     private var frameCount = 0
@@ -111,6 +112,14 @@ final class PetController: NSObject {
         guard force || clock - lastDockPoll > Cfg.dockPollInterval else { return }
         lastDockPoll = clock
         claudeOpen = claudeIsRunning()
+
+        // Claude fermé, ou réponse jamais close (hook Stop manqué, plantage,
+        // machine en veille) : on ne le laisse pas cuisiner indéfiniment.
+        if claudeBusy && (!claudeOpen || clock - busySince > Cfg.busyTimeout) {
+            claudeBusy = false
+            log(!claudeOpen ? "busy annulé (Claude fermé)" : "busy expiré (pas de Stop)")
+            if view.state == .cooking { setState(.idle, for: 1) }
+        }
         let screen = NSScreen.screens.first ?? NSScreen.main!
 
         let margin = CGFloat(Art.cols) * Cfg.pixel / 2 + 4
@@ -203,6 +212,21 @@ final class PetController: NSObject {
         }
     }
 
+    /// Trace horodatée dans ~/.clawd-dock/log — sert à auditer les hooks.
+    private func log(_ line: String) {
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        guard let data = "\(stamp)  \(line)\n".data(using: .utf8) else { return }
+        let url = triggerURL.deletingLastPathComponent().appendingPathComponent("log")
+        if let h = try? FileHandle(forWritingTo: url) {
+            if h.seekToEndOfFile() > 64_000 {     // journal borné
+                try? h.truncate(atOffset: 0); h.seek(toFileOffset: 0)
+            }
+            h.write(data); try? h.close()
+        } else {
+            try? data.write(to: url)
+        }
+    }
+
     /// Les hooks Claude Code écrivent un mot-clé dans ce fichier.
     private func checkTrigger() {
         guard let attrs = try? FileManager.default.attributesOfItem(atPath: triggerURL.path),
@@ -211,6 +235,7 @@ final class PetController: NSObject {
         guard let last = lastTrigger, stamp > last else { return }
         let event = (try? String(contentsOf: triggerURL, encoding: .utf8))?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        log("événement reçu : \(event.isEmpty ? "(vide)" : event)")
         handle(event: event.isEmpty ? "prompt" : event)
     }
 
@@ -226,6 +251,7 @@ final class PetController: NSObject {
             if !airborne.contains(view.state) { menuToss() }
         default:                         // "prompt" : un message vient de partir
             claudeBusy = true
+            busySince = clock
             asleepForClaude = false
             if !airborne.contains(view.state) { startAdventure() }
         }
@@ -233,15 +259,17 @@ final class PetController: NSObject {
 
     // ── Machine à états ─────────────────────────────────────────────────────
     private func setState(_ s: PetState, for duration: TimeInterval) {
+        if s != view.state { log("état : \(view.state) → \(s)") }
         view.state = s
         stateUntil = clock + duration
         if s == .walking { idleSeconds = 0 }
     }
 
+    /// Il ne cuisine JAMAIS de son propre chef : la poêle veut dire « Claude
+    /// travaille », rien d'autre. Au repos il marche, flâne ou s'assoit.
     private func pickNextAction() {
-        if claudeBusy { startCooking(); return }   // Claude répond : il reste aux fourneaux
+        if claudeBusy { startCooking(); return }
         if followCursor { setState(.walking, for: 1); return }
-        if chefMode && Int.random(in: 0..<10) < 4 { startCooking(); return }
         switch Int.random(in: 0..<10) {
         case 0...4:
             direction = Bool.random() ? 1 : -1
@@ -443,7 +471,9 @@ final class PetController: NSObject {
             }
         } else {
             idleSeconds += dt
-            if idleSeconds > 22, ![.sleeping, .happy, .cooking].contains(view.state) {
+            // Claude ouvert : il ne pique du nez qu'après un long moment, sinon
+            // il marche ou reste assis à attendre.
+            if idleSeconds > Cfg.boredomDelay, ![.sleeping, .happy, .cooking].contains(view.state) {
                 setState(.sleeping, for: .random(in: 12...25))
             }
         }
@@ -487,13 +517,13 @@ final class PetController: NSObject {
         toss.target = self
         menu.addItem(toss)
 
-        let chef = NSMenuItem(title: "Chef mode 👨\u{200D}🍳",
+        let chef = NSMenuItem(title: "Always wear the chef hat 👨\u{200D}🍳",
                               action: #selector(toggleChef), keyEquivalent: "")
         chef.target = self
         chef.state = chefMode ? .on : .off
         menu.addItem(chef)
 
-        if chefMode {
+        do {
             let cook = NSMenuItem(title: "Start cooking! 🍳",
                                   action: #selector(menuCook), keyEquivalent: "")
             cook.target = self
@@ -544,7 +574,7 @@ final class PetController: NSObject {
         view.chefMode = chefMode
         UserDefaults.standard.set(chefMode, forKey: "chefMode")
         statusItem?.menu = buildMenu()
-        if chefMode { menuCook() } else { setState(.idle, for: 0.5) }
+        setState(.idle, for: 0.5)
     }
     @objc private func toggleFollow() {
         followCursor.toggle()
