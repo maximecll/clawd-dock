@@ -12,7 +12,7 @@ swiftc -O -swift-version 5 \
     -target arm64-apple-macos13.0 \
     -framework AppKit \
     -o "$APP/Contents/MacOS/ClawdDock" \
-    Sources/PetView.swift Sources/main.swift
+    Sources/Hooks.swift Sources/PetView.swift Sources/main.swift
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

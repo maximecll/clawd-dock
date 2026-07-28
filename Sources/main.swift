@@ -77,6 +77,11 @@ final class PetController: NSObject {
         y = groundY
         setState(.walking, for: 3)
 
+        // On laisse Clawd apparaître avant de proposer quoi que ce soit
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            self?.offerHookSetupIfNeeded()
+        }
+
         timer = Timer.scheduledTimer(withTimeInterval: 1 / Cfg.fps, repeats: true) { [weak self] _ in
             self?.tick(1 / Cfg.fps)
         }
@@ -500,6 +505,60 @@ final class PetController: NSObject {
         view.needsDisplay = true
     }
 
+    // ── Branchement sur Claude Code ─────────────────────────────────────────
+    /// Proposé une seule fois, jamais fait dans le dos de l'utilisateur.
+    private func offerHookSetupIfNeeded() {
+        let key = "hookPromptShown"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        guard !ClaudeHooks.areInstalled() else { return }
+
+        let alert = NSAlert()
+        alert.messageText = "Let Clawd follow your Claude Code sessions?"
+        alert.informativeText = """
+        Clawd can act out what Claude Code is doing: he climbs your Claude window         when you send a prompt, cooks while Claude is answering, and serves the         dish when it's done. Without this he will just wander your Dock.
+
+        This adds three hooks to ~/.claude/settings.json (UserPromptSubmit, Stop,         SessionEnd). Each one runs only:
+
+            \(ClaudeHooks.command(for: "<word>"))
+
+        No conversation content is read, stored or sent anywhere. Your settings         file is backed up to settings.json.bak-clawd first, and you can undo this         at any time from Clawd's menu.
+        """
+        alert.addButton(withTitle: "Set it up")
+        alert.addButton(withTitle: "Not now")
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        applyHooks(enabled: true)
+    }
+
+    private func applyHooks(enabled: Bool) {
+        let outcome = ClaudeHooks.set(enabled: enabled)
+        statusItem?.menu = buildMenu()
+        log("hooks \(enabled ? "installés" : "retirés") → \(outcome)")
+
+        let alert = NSAlert()
+        switch outcome {
+        case .ok:
+            alert.messageText = enabled ? "Clawd is wired in." : "Clawd is unhooked."
+            alert.informativeText = enabled
+                ? "Hooks are read when a Claude Code session starts, so restart your session to see him react."
+                : "The three hooks were removed from ~/.claude/settings.json."
+        case .unreadable:
+            alert.alertStyle = .warning
+            alert.messageText = "Couldn't read ~/.claude/settings.json"
+            alert.informativeText = "The file exists but isn't plain JSON, so nothing was changed. You can add the hooks by hand — see the README."
+        case .writeFailed:
+            alert.alertStyle = .warning
+            alert.messageText = "Couldn't write ~/.claude/settings.json"
+            alert.informativeText = "Nothing was changed. A backup of your settings is at settings.json.bak-clawd."
+        }
+        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
+    @objc private func toggleHooks() { applyHooks(enabled: !ClaudeHooks.areInstalled()) }
+
     // ── Menus ───────────────────────────────────────────────────────────────
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
@@ -543,6 +602,13 @@ final class PetController: NSObject {
         menu.addItem(center)
 
         menu.addItem(.separator())
+        let wired = ClaudeHooks.areInstalled()
+        let hook = NSMenuItem(title: wired ? "Disconnect from Claude Code"
+                                           : "Connect to Claude Code…",
+                              action: #selector(toggleHooks), keyEquivalent: "")
+        hook.target = self
+        menu.addItem(hook)
+
         let quit = NSMenuItem(title: "Quit Clawd", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)

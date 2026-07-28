@@ -15,7 +15,14 @@ And it stays honest about resources: a native Swift/AppKit binary, **200 KB on d
 The 11 × 8 sprite was traced pixel by pixel from the original Clawd: body, ears,
 four legs, two square eyes.
 
-![Every pose Clawd can strike](docs/poses.png)
+![Clawd parachuting onto the Dock, then cooking](docs/demo.gif)
+
+<details>
+<summary>Every pose he can strike</summary>
+
+![Pose sheet](docs/poses.png)
+
+</details>
 
 > **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by
 > Anthropic. Clawd is Anthropic's mascot; the sprite here is a hand-made derivative
@@ -95,14 +102,22 @@ put him to sleep.
 
 ### Install the hooks
 
+**The app asks you on first launch** — one dialog spelling out exactly what it will
+add, with *Set it up* / *Not now*. Nothing is written to your config unless you say
+yes. You can change your mind later from Clawd's menu: **Connect to Claude Code…**
+or **Disconnect from Claude Code**.
+
+If you'd rather do it from a terminal, the repo has the same thing as a script:
+
 ```bash
 ./install-hook.sh
 ```
 
-⚠️ This edits your **`~/.claude/settings.json`**. It backs the file up to
-`.bak-clawd` first and is safe to re-run (no duplicate entries). To remove: delete
-the entries containing `.clawd-dock/trigger`, or restore the backup. Hooks are read
-when a Claude Code session starts.
+⚠️ Either way this edits your **`~/.claude/settings.json`**. It backs the file up to
+`settings.json.bak-clawd` first, only ever touches the three hook entries (every
+other setting is left byte-for-byte alone), and refuses to write at all if the file
+isn't plain JSON it can parse. Hooks are read when a Claude Code session starts, so
+restart your session afterwards.
 
 ### Checking what he's reacting to
 
