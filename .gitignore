@@ -1,4 +1,5 @@
 build/
 .pv/
 *.png
+!docs/*.png
 .DS_Store

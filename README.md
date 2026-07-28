@@ -1,15 +1,26 @@
 # Clawd Dock 🦀
 
 A tiny pixel-art Clawd that lives on your macOS Dock and reacts to what Claude Code
-is doing. Native Swift/AppKit app — no dependencies, no Xcode, just one `build.sh`.
+is doing.
+
+Desktop pets are not new. This one is different in one specific way: **it is not a
+decoration, it is a status indicator with a personality.** Clawd knows when you sent
+a message, when Claude is still thinking, when the answer landed, and when you closed
+Claude entirely — and he acts it out. He climbs your Claude window, drops onto the
+Dock, cooks while you wait, and serves the dish when it's done.
+
+And it stays honest about resources: a native Swift/AppKit binary, **200 KB on disk,
+~4 % CPU, zero dependencies, zero Electron**. One `build.sh`, no Xcode.
 
 The 11 × 8 sprite was traced pixel by pixel from the original Clawd: body, ears,
 four legs, two square eyes.
 
+![Every pose Clawd can strike](docs/poses.png)
+
 > **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by
 > Anthropic. Clawd is Anthropic's mascot; the sprite here is a hand-made derivative
-> of that character, shared for fun and non-commercial use only. The MIT license
-> below covers the code in this repository, not the character.
+> of that character, shared for fun and non-commercial use only. The license below
+> covers the code in this repository, not the character.
 
 ## Install
 
@@ -140,4 +151,8 @@ geometry. Source comments are in French.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Applies to the code, not to the Clawd character.
+Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Chosen over MIT on purpose: alongside the usual permissive terms it carries an
+explicit trademark clause (section 6), which matters for a project built on someone
+else's character. The license covers the code in this repository — not Clawd.
